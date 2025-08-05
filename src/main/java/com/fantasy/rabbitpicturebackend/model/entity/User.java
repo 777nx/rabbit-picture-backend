@@ -1,11 +1,10 @@
 package com.fantasy.rabbitpicturebackend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
-
-import lombok.Data;
 
 /**
  * 用户
@@ -54,6 +53,11 @@ public class User implements Serializable {
      * 用户角色：user/admin
      */
     private String userRole;
+
+    /**
+     * 用户邮箱
+     */
+    private String userEmail;
 
     /**
      * 编辑时间

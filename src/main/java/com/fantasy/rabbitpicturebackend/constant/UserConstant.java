@@ -10,6 +10,16 @@ public interface UserConstant {
      */
     String USER_LOGIN_STATE = "user_login";
 
+    /**
+     * 邮箱验证码 key 前缀
+     */
+    String EMAIL_KEY_PREFIX = "rabbitPicture:sendEmail:code:";
+
+    /**
+     * 邮箱验证码冷却期 key 前缀
+     */
+    String EMAIL_TIMER_KEY_PREFIX = "rabbitPicture:sendEmail:timer:";
+
     //  region 权限
 
     /**

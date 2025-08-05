@@ -15,11 +15,16 @@ import com.fantasy.rabbitpicturebackend.model.entity.User;
 import com.fantasy.rabbitpicturebackend.model.vo.LoginUserVO;
 import com.fantasy.rabbitpicturebackend.model.vo.UserVO;
 import com.fantasy.rabbitpicturebackend.service.UserService;
+import com.fantasy.rabbitpicturebackend.utils.EmailUtils;
+import com.fantasy.rabbitpicturebackend.utils.VerificationCodeUtil;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/user")
@@ -28,16 +33,19 @@ public class UserController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private EmailUtils emailUtils;
+
     /**
      * 用户注册
      */
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
-        String userAccount = userRegisterRequest.getUserAccount();
-        String password = userRegisterRequest.getPassword();
-        String checkPassword = userRegisterRequest.getCheckPassword();
-        long result = userService.userRegister(userAccount, password, checkPassword);
+        long result = userService.userRegister(userRegisterRequest);
         return ResultUtils.success(result);
     }
 
@@ -160,5 +168,38 @@ public class UserController {
         List<UserVO> userVOList = userService.getUserVOList(userPage.getRecords());
         userVOPage.setRecords(userVOList);
         return ResultUtils.success(userVOPage);
+    }
+
+    @GetMapping("/sendEmail")
+    public BaseResponse<Boolean> sendEmail(String email) {
+        // 效验邮箱
+        if (!userService.isValidEmail(email)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "邮箱格式错误");
+        }
+        // 构建缓存的 key
+        String hashKey = DigestUtils.md5DigestAsHex(email.getBytes());
+        String cacheKey = String.format(UserConstant.EMAIL_KEY_PREFIX + hashKey);
+        String cacheKeyTimer = String.format(UserConstant.EMAIL_TIMER_KEY_PREFIX + hashKey);
+        // 检查发送频率（1分钟内不能重复发送）
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(cacheKeyTimer))) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "操作过于频繁，请稍后再试");
+        }
+        // 生成验证码
+        String code = VerificationCodeUtil.generateCode(6);
+        // 发送邮件
+        emailUtils.sendVerificationCode(email, code);
+        // 存储验证码到 Redis（5分钟有效期）
+        stringRedisTemplate.opsForValue().set(cacheKey, code, 5, TimeUnit.MINUTES);
+        // 设置1分钟冷却期
+        stringRedisTemplate.opsForValue().set(cacheKeyTimer, "cooling", 1, TimeUnit.MINUTES);
+        // 返回结果
+        return ResultUtils.success(true);
+    }
+
+    @PostMapping("/resetPassword")
+    public BaseResponse<Boolean> resetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest) {
+        ThrowUtils.throwIf(resetPasswordRequest == null, ErrorCode.PARAMS_ERROR);
+        boolean result = userService.resetPassword(resetPasswordRequest);
+        return ResultUtils.success(result);
     }
 }

@@ -1,9 +1,11 @@
 package com.fantasy.rabbitpicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.fantasy.rabbitpicturebackend.model.dto.user.UserQueryRequest;
-import com.fantasy.rabbitpicturebackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.fantasy.rabbitpicturebackend.model.dto.user.UserQueryRequest;
+import com.fantasy.rabbitpicturebackend.model.dto.user.UserRegisterRequest;
+import com.fantasy.rabbitpicturebackend.model.dto.user.ResetPasswordRequest;
+import com.fantasy.rabbitpicturebackend.model.entity.User;
 import com.fantasy.rabbitpicturebackend.model.vo.LoginUserVO;
 import com.fantasy.rabbitpicturebackend.model.vo.UserVO;
 
@@ -20,12 +22,10 @@ public interface UserService extends IService<User> {
     /**
      * 用户注册
      *
-     * @param userAccount   用户账户
-     * @param userPassword  用户密码
-     * @param checkPassword 校验密码
+     * @param userRegisterRequest 用户注册请求
      * @return 新用户 id
      */
-    long userRegister(String userAccount, String userPassword, String checkPassword);
+    long userRegister(UserRegisterRequest userRegisterRequest);
 
     /**
      * 用户登录
@@ -100,4 +100,29 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean isAdmin(User user);
+
+    /**
+     * 校验邮箱格式
+     *
+     * @param email
+     * @return
+     */
+    boolean isValidEmail(String email);
+
+    /**
+     * 校验验证码
+     *
+     * @param userEmail
+     * @param userInputCode
+     * @return
+     */
+    boolean isValidCode(String userEmail, String userInputCode);
+
+    /**
+     * 忘记密码
+     *
+     * @param resetPasswordRequest
+     * @return
+     */
+    boolean resetPassword(ResetPasswordRequest resetPasswordRequest);
 }
