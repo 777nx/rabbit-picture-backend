@@ -8,6 +8,7 @@ import com.fantasy.rabbitpicturebackend.model.dto.user.ResetPasswordRequest;
 import com.fantasy.rabbitpicturebackend.model.entity.User;
 import com.fantasy.rabbitpicturebackend.model.vo.LoginUserVO;
 import com.fantasy.rabbitpicturebackend.model.vo.UserVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -125,4 +126,13 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean resetPassword(ResetPasswordRequest resetPasswordRequest);
+
+    /**
+     * 更新用户头像
+     * @param multipartFile
+     * @param id
+     * @param request
+     * @return
+     */
+    String updateUserAvatar(MultipartFile multipartFile, Long id, HttpServletRequest request);
 }

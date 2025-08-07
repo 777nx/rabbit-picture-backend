@@ -11,10 +11,12 @@ import com.fantasy.rabbitpicturebackend.exception.BusinessException;
 import com.fantasy.rabbitpicturebackend.exception.ErrorCode;
 import com.fantasy.rabbitpicturebackend.exception.ThrowUtils;
 import com.fantasy.rabbitpicturebackend.manager.auth.StpKit;
+import com.fantasy.rabbitpicturebackend.manager.upload.FilePictureUpload;
 import com.fantasy.rabbitpicturebackend.mapper.UserMapper;
+import com.fantasy.rabbitpicturebackend.model.dto.file.UploadPictureResult;
+import com.fantasy.rabbitpicturebackend.model.dto.user.ResetPasswordRequest;
 import com.fantasy.rabbitpicturebackend.model.dto.user.UserQueryRequest;
 import com.fantasy.rabbitpicturebackend.model.dto.user.UserRegisterRequest;
-import com.fantasy.rabbitpicturebackend.model.dto.user.ResetPasswordRequest;
 import com.fantasy.rabbitpicturebackend.model.entity.User;
 import com.fantasy.rabbitpicturebackend.model.enums.UserRoleEnum;
 import com.fantasy.rabbitpicturebackend.model.vo.LoginUserVO;
@@ -24,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -42,6 +45,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private FilePictureUpload filePictureUpload;
 
     /**
      * 用户注册
@@ -102,7 +108,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setUserPassword(encryptPassword);
         user.setUserName("无名");
         // 设置默认用户头像
-        user.setUserAvatar("https://lsky.777nx.cn/i/2025/08/04/avatar.jpg");
+        // user.setUserAvatar("https://lsky.777nx.cn/i/2025/08/04/avatar.jpg");
         user.setUserEmail(userEmail);
         user.setUserRole(UserRoleEnum.USER.getValue());
         boolean saveResult = this.save(user);
@@ -335,6 +341,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         boolean result = this.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR, "重置密码失败");
         return result;
+    }
+
+    /**
+     * 更新用户头像
+     *
+     * @param multipartFile
+     * @param id
+     * @param request
+     * @return
+     */
+    @Override
+    public String updateUserAvatar(MultipartFile multipartFile, Long id, HttpServletRequest request) {
+        // 判断用户是否存在
+        User user = this.baseMapper.selectById(id);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+        }
+        // 判断用户是否登录
+        User loginUser = getLoginUser(request);
+        if (loginUser == null || !loginUser.getId().equals(id)) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
+        }
+        // 判断文件是否为空
+        if (multipartFile == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件不能为空");
+        }
+        // 判断文件类型
+        // 上传图片，得到图片信息
+        // 按照用户 id 划分目录
+        String uploadPathPrefix = String.format("public/%s", loginUser.getId());
+        UploadPictureResult uploadPictureResult = filePictureUpload.uploadPicture(multipartFile, uploadPathPrefix);
+        // 更新用户头像
+        user.setUserAvatar(uploadPictureResult.getUrl());
+        // 更新数据库
+        boolean result = this.baseMapper.updateById(user) > 0;
+        ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR, "更新用户头像失败");
+        return uploadPictureResult.getUrl();
     }
 
     /**

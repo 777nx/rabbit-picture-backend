@@ -20,6 +20,7 @@ import com.fantasy.rabbitpicturebackend.utils.VerificationCodeUtil;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -139,10 +140,15 @@ public class UserController {
      * 更新用户
      */
     @PostMapping("/update")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest) {
+    // @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest, HttpServletRequest request) {
         if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 判断是否是管理员，管理员可以更新任意用户，普通用户只能更新自己
+        User loginUser = userService.getLoginUser(request);
+        if (loginUser == null || !loginUser.getUserRole().equals(UserConstant.ADMIN_ROLE)) {
+            userUpdateRequest.setUserRole(UserConstant.DEFAULT_ROLE);
         }
         User user = new User();
         BeanUtil.copyProperties(userUpdateRequest, user);
@@ -170,6 +176,9 @@ public class UserController {
         return ResultUtils.success(userVOPage);
     }
 
+    /**
+     * 发送邮箱验证码
+     */
     @GetMapping("/sendEmail")
     public BaseResponse<Boolean> sendEmail(String email) {
         // 效验邮箱
@@ -196,10 +205,23 @@ public class UserController {
         return ResultUtils.success(true);
     }
 
+    /**
+     * 重置密码
+     */
     @PostMapping("/resetPassword")
     public BaseResponse<Boolean> resetPassword(@RequestBody ResetPasswordRequest resetPasswordRequest) {
         ThrowUtils.throwIf(resetPasswordRequest == null, ErrorCode.PARAMS_ERROR);
         boolean result = userService.resetPassword(resetPasswordRequest);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 更新用户头像
+     */
+    @PostMapping("/update/avatar")
+    public BaseResponse<String> updateUserAvatar(MultipartFile multipartFile, Long id, HttpServletRequest request) {
+        ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
+        String result = userService.updateUserAvatar(multipartFile,id, request);
         return ResultUtils.success(result);
     }
 }
