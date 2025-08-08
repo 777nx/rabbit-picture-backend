@@ -1,5 +1,10 @@
 # 兔子云图库项目介绍
 
+本项目代码开源：
+
+- 前端：[https://github.com/777nx/rabbit-picture-frontend](https://github.com/777nx/rabbit-picture-frontend)
+- 后端：[https://github.com/777nx/rabbit-picture-backend](https://github.com/777nx/rabbit-picture-backend)
+
 ## 项目概述
 
 本项目是一个基于 **Vue 3 + Spring Boot + COS + WebSocket** 构建的 **企业级智能协同云图库平台**。
