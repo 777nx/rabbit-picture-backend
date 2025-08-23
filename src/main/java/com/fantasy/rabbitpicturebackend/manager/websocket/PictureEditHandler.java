@@ -135,7 +135,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
         if (editingUserId != null && editingUserId.equals(user.getId())) {
             // 构造响应，发送具体操作的通知
             PictureEditResponseMessage pictureEditResponseMessage = new PictureEditResponseMessage();
-            pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.ENTER_EDIT.getValue());
+            pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.EDIT_ACTION.getValue());
             String message = String.format("%s 执行 %s", user.getUserName(), actionEnum.getText());
             pictureEditResponseMessage.setMessage(message);
             pictureEditResponseMessage.setEditAction(editAction);
